@@ -52,6 +52,7 @@ class SparkJob extends Serializable {
   val connector = CassandraConnector.apply(sparkSession.sparkContext.getConf)
 
   // Create keyspace and tables here, NOT in prod
+  //在这里创建密钥空间和表,不在prod中
   connector.withSessionDo { session =>
     Statements.createKeySpaceAndTable(session, true)
   }
@@ -81,6 +82,8 @@ class SparkJob extends Serializable {
 
     val df =
       lines.map { line =>
+        //value以逗号分隔发送的值"userid_1;2015-05-01T00:00:00;some_value"
+        //取出第一列的值(value)
         val columns = line._1.split(";") // value being sent out as a comma separated value "userid_1;2015-05-01T00:00:00;some_value"
         (columns(0), Commons.getTimeStamp(columns(1)), columns(2))
       }.toDF(cols: _*)
@@ -88,9 +91,11 @@ class SparkJob extends Serializable {
     df.printSchema()
 
     // Run your business logic here
+    //在这里运行业务逻辑
     val ds = df.select($"user_id", $"time", $"event").as[Commons.UserEvent]
 
     // This Foreach sink writer writes the output to cassandra.
+    //这个Foreach接收器编写器将输出写入cassandra
     import org.apache.spark.sql.ForeachWriter
     val writer = new ForeachWriter[Commons.UserEvent] {
       override def open(partitionId: Long, version: Long) = true
